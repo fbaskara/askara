@@ -4,6 +4,9 @@ import TableContainer from "../../components/TableContainer";
 import ArticleContent from "../../components/ArticleContent";
 import AreaOverviewChart from "../../components/AreaOverviewChart";
 import DatePicker from "react-datepicker";
+import axios from 'axios';
+import moment from 'moment';
+import _get from 'lodash/get';
 import "react-datepicker/dist/react-datepicker.css";
 
 const propsData = {
@@ -78,16 +81,50 @@ class Dashboard extends React.Component {
   constructor() {
     super();
     this.state = {
-      startDate: new Date()
+      date: new Date(),
+      page_view: null
     };
   }
 
-  onChangeDate (date) {
-    // useState(new Date())
+  componentDidMount () {
+    this._requestPageView()
   }
 
-  
-  
+  _requestPageView () {
+    const { date } = this.state
+    const dateString = moment(date).format('YYYY-MM-DD')
+    const _self = this;
+
+    const url = `https://private-19153-askaraapi.apiary-mock.com/analytic/page-view?date=${dateString}`
+    axios.get(url)
+      .then(response => {
+        const result = _get(response, 'data', null)
+
+        if (result) {
+          _self.setState({
+            page_view: response
+          })
+        } else {
+          _self.setState({
+            page_view: null
+          })
+        }
+      })
+      .catch(errr => {
+        _self.setState({
+          page_view: null
+        })
+      })
+  }
+
+  _onChangeDate (date) {
+    this.setState({
+      date: date
+    }, () => {
+      this._requestPageView()
+    })
+  }
+
   render() {
     return (
       <>
@@ -104,8 +141,8 @@ class Dashboard extends React.Component {
 
             <div className="level-right" style={{ width:"18%" }}>
               <DatePicker 
-                selected={this.state.startDate} 
-                onChange={date => this.onChangeDate(date)} 
+                selected={this.state.date} 
+                onChange={date => this._onChangeDate(date)} 
                 dateFormat="MMMM d, yyyy"
                 className="input" />
             </div>
